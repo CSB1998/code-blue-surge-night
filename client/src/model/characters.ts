@@ -3,8 +3,11 @@ import type { Emotion } from './contract'
 export type Speaker = 'Kim' | 'Raj' | 'Okafor' | 'Reyes'
 
 // All portrait images are picked up automatically from
-// src/assets/characters/<id>/<emotion>.png. Replace files, keep names.
-const images = import.meta.glob('../assets/characters/*/*.png', { eager: true, import: 'default' }) as Record<string, string>
+// src/assets/characters/<id>/<emotion>.jpg (or .png). Replace files, keep names.
+// Real art is .jpg; .png is the generated placeholder. .jpg wins if both exist.
+const images = import.meta.glob('../assets/characters/*/*.{jpg,png}', { eager: true, import: 'default' }) as Record<string, string>
+const find = (id: string, emotion: string) =>
+  images[`../assets/characters/${id}/${emotion}.jpg`] ?? images[`../assets/characters/${id}/${emotion}.png`]
 
 export interface Character {
   id: 'kim' | 'raj' | 'okafor' | 'reyes'
@@ -23,7 +26,7 @@ export const CHARACTERS: Record<Speaker, Character> = {
 
 export function portrait(name: Speaker, emotion: Emotion = 'focused'): string {
   const id = CHARACTERS[name].id
-  return images[`../assets/characters/${id}/${emotion}.png`] ?? images[`../assets/characters/${id}/focused.png`]
+  return find(id, emotion) ?? find(id, 'focused')
 }
 
 export const colorOf = (name: string) => (CHARACTERS as Record<string, Character>)[name]?.color ?? '#9AA8BD'

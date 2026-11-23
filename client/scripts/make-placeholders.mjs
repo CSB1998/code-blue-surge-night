@@ -1,6 +1,6 @@
 // Generates placeholder PNGs (no dependencies). Run: npm run placeholders
 // Replace any file later with real art using the SAME file name.
-import { writeFileSync, mkdirSync } from 'node:fs'
+import { writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { deflateSync } from 'node:zlib'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -156,6 +156,7 @@ function face(c, cx, cy, emotion, ink) {
 }
 
 for (const [key, p] of Object.entries(PEOPLE)) {
+  if (existsSync(join(OUT, key, 'focused.jpg'))) { console.log('skip', key, '(real art present)'); continue }
   const accent = hex(p.accent)
   for (const emo of EMOTIONS) {
     const c = canvas(400, 500)
