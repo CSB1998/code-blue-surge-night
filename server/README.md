@@ -2,7 +2,17 @@
 
 FastAPI backend that talks to a local [Ollama](https://ollama.com) server. Default model: `stable-beluga` (completion API only).
 
-The client expects this process on **port 3001**. Socket event contract (still to wire): root [README](../README.md#socket-event-contract) and [`client/src/types/contract.ts`](../client/src/types/contract.ts).
+Clean architecture. Dependencies point inward: HTTP and Ollama know about use cases; use cases know about the domain; the domain knows about neither.
+
+```
+main.py                         composition root (uvicorn main:app)
+app/domain/                     entities and errors
+app/application/                use cases and the LanguageModel port
+app/infrastructure/             settings and the Ollama adapter
+app/interfaces/http/            FastAPI routes, schemas, error mapping
+```
+
+The client expects this process on **port 3001**. Socket event contract (still to wire): root [README](../README.md#socket-event-contract) and [`client/src/model/contract.ts`](../client/src/model/contract.ts).
 
 ## Run
 

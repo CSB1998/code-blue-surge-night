@@ -18,7 +18,7 @@ It's 2:47 AM in the ICU at City General during a respiratory virus surge. Every 
 
 ```
 client/   Frontend: Vite + React + TypeScript + Tailwind (runs on fake data by default)
-server/   Backend: Node + Express + socket.io + Ollama + DuckDB + BAND (teammate)
+server/   Backend: FastAPI + Ollama (clean architecture). Socket.io, DuckDB, and BAND still to wire.
 bruin/    Bruin pipeline: SQL assets and checks over codeblue.duckdb
 ```
 
@@ -73,7 +73,7 @@ _Add screenshots here: start screen, code screen, ventilator modal, debrief._
 
 ## Socket event contract
 
-The TypeScript source of truth is [`client/src/types/contract.ts`](client/src/types/contract.ts). Keep the two in sync.
+The TypeScript source of truth is [`client/src/model/contract.ts`](client/src/model/contract.ts). Keep the two in sync.
 
 ### Server → client
 
