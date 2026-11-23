@@ -3,10 +3,12 @@ import { CHARACTERS, portrait } from '../../model/characters'
 import { speechSupported } from '../../controller/useSpeechRecognition'
 import { MOCK } from '../../controller/transport'
 import titleImg from '../../assets/title.jpg'
+import { Leaderboard } from '../game/Leaderboard'
+import { cleanInitials, type Entry } from '../game/scores'
 
 type MicState = 'unknown' | 'checking' | 'ok' | 'blocked'
 
-export function StartScreen({ onStart }: { onStart: () => void }) {
+export function StartScreen({ onStart, initials, onInitials, board }: { onStart: () => void; initials: string; onInitials: (v: string) => void; board: Entry[] }) {
   const [mic, setMic] = useState<MicState>('unknown')
 
   const checkMic = async () => {
@@ -60,6 +62,18 @@ export function StartScreen({ onStart }: { onStart: () => void }) {
         </ul>
 
         <div className="mt-10 flex items-center gap-6">
+          <label className="flex flex-col gap-1">
+            <span className="text-[12px] font-bold tracking-[0.2em] text-muted">YOUR INITIALS</span>
+            <input
+              value={initials}
+              onChange={(e) => onInitials(cleanInitials(e.target.value))}
+              onKeyDown={(e) => { if (e.key === 'Enter') onStart() }}
+              maxLength={3}
+              placeholder="AAA"
+              aria-label="Your initials for the leaderboard, 3 letters"
+              className="h-[72px] w-[150px] rounded-xl border-2 border-line bg-bg/80 text-center font-mono text-[36px] font-bold tracking-[0.3em] text-ink placeholder:text-[#4a5870] focus:border-bp focus:outline-none"
+            />
+          </label>
           <button
             onClick={onStart}
             className="rounded-xl bg-alarm px-12 py-5 text-[28px] font-extrabold tracking-wide text-white shadow-[0_0_40px_rgb(255_59_78/0.45)] transition-transform duration-150 hover:scale-[1.03]"
@@ -80,6 +94,8 @@ export function StartScreen({ onStart }: { onStart: () => void }) {
           Hold <kbd className="rounded border border-line bg-panel px-1.5 font-mono">Space</kbd> or the mic button to talk. Release to send.
         </p>
       </div>
+
+      <Leaderboard board={board} className="absolute right-[90px] top-[150px] w-[440px] backdrop-blur-sm" />
 
       <footer className="absolute bottom-6 left-[140px] right-[140px] flex justify-between text-[14px] text-muted">
         <span>Training game. Simplified medicine. Not medical advice.</span>

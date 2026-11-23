@@ -9,10 +9,12 @@ import { RoomScene } from '../components/RoomScene'
 import { DecisionLog, WhisperPanel } from '../components/Panels'
 import { BottomBar } from '../components/BottomBar'
 import { VentModal } from '../components/VentModal'
+import { ScoreHud } from '../game/ScoreHud'
+import type { GameScore } from '../game/useGameScore'
 
 const OUTCOME_TEXT = { survived: 'Maria survived', complications: 'Maria survived, with complications', died: 'Maria died' }
 
-export function CodeScreen({ run }: { run: CodeRun }) {
+export function CodeScreen({ run, game }: { run: CodeRun; game: GameScore }) {
   // ---- soundscape: read-only on patient ticks; stops when the code ends
   useEffect(() => { soundscape.update(run.patient) }, [run.patient])
   useEffect(() => { if (run.ended) soundscape.stop() }, [run.ended])
@@ -44,7 +46,8 @@ export function CodeScreen({ run }: { run: CodeRun }) {
   return (
     <div className="grid h-full grid-rows-[56px_1fr_150px] gap-3 p-3">
       {/* Header */}
-      <header className="flex items-center gap-4 rounded-xl border border-line bg-panel px-5">
+      <header className="relative z-40 flex items-center gap-4 rounded-xl border border-line bg-panel px-5">
+        <ScoreHud game={game} />
         <h1 className="text-[20px] font-extrabold tracking-[0.12em]">
           <span className="text-alarm">CODE BLUE</span>: SURGE NIGHT
         </h1>
@@ -77,7 +80,7 @@ export function CodeScreen({ run }: { run: CodeRun }) {
       {/* Main */}
       <div className="grid min-h-0 grid-cols-[380px_1fr_520px] gap-3">
         <DecisionLog log={run.log} />
-        <RoomScene run={run} />
+        <RoomScene run={run} trust={game.trust} />
         <div className="grid min-h-0 grid-rows-[auto_1fr] gap-3">
           <Monitor p={run.patient} />
           <WhisperPanel whispers={run.whispers} />

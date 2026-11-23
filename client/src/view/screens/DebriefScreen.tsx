@@ -29,7 +29,7 @@ const band = (c: number) =>
 const tooltipStyle = { background: '#121826', border: '1px solid #1F2A3C', borderRadius: 8, color: '#E6EDF7' }
 const axis = { stroke: '#9AA8BD', fontSize: 13 }
 
-export function DebriefScreen({ debrief: d, ended, onRestart }: { debrief: Debrief; ended: RunEnded | null; onRestart: () => void }) {
+export function DebriefScreen({ debrief: d, ended, onRestart, children }: { debrief: Debrief; ended: RunEnded | null; onRestart: () => void; children?: ReactNode }) {
   const outcome = OUTCOME[ended?.maria_outcome ?? 'complications']
   const lastT = Math.max(1, ...d.charts.vitals.map((v) => v.t_s), ...d.charts.orders.map((o) => o.t_s))
 
@@ -52,6 +52,8 @@ export function DebriefScreen({ debrief: d, ended, onRestart }: { debrief: Debri
             Run another code
           </button>
         </header>
+
+        {children}
 
         <div className="mt-6 grid grid-cols-12 gap-6">
           {/* Skills */}

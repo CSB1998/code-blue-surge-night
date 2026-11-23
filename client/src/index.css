@@ -151,6 +151,14 @@ body {
 .anim-fade-in-slow { animation: fade-in 1200ms ease-out both; }
 .anim-caret { animation: caret 1s steps(1) infinite; }
 
+@keyframes score-pop {
+  0% { opacity: 0; transform: translateY(8px) scale(0.9); }
+  15% { opacity: 1; transform: translateY(0) scale(1.05); }
+  75% { opacity: 1; transform: translateY(18px); }
+  100% { opacity: 0; transform: translateY(30px); }
+}
+.anim-score-pop { animation: score-pop 1.8s ease-out both; }
+
 .anim-slide-in { animation: slide-in 260ms ease-out both; }
 .anim-fade-in { animation: fade-in 300ms ease-out both; }
 .anim-pop-in { animation: pop-in 200ms ease-out both; }
@@ -177,4 +185,5 @@ body {
   .anim-cam-shake-sm { animation: none !important; }
   .anim-alarm-pulse { display: none; } /* the steady red edge stays; it just doesn't flash */
   .anim-caret { animation: none !important; }
+  .anim-score-pop { animation: none !important; } /* pop-ups show still, then disappear */
 }

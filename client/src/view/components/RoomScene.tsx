@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import type { CodeRun } from '../../controller/useCodeRun'
 import { portrait } from '../../model/characters'
 import { CharacterCard } from './CharacterCard'
+import { TrustMeter } from '../game/TrustMeter'
+import type { AgentName } from '../../model/contract'
 import { alarmReason } from './Monitor'
 import { voices } from '../../controller/voices'
 import { soundscape } from '../audio/soundscape'
@@ -27,7 +29,7 @@ function Layer({ depth, style, className = '', children }: { depth: number; styl
   )
 }
 
-export function RoomScene({ run }: { run: CodeRun }) {
+export function RoomScene({ run, trust }: { run: CodeRun; trust: Record<AgentName, number> }) {
   const { emotions, lastAction, speaking, patient, reyes } = run
   const say = (n: string) => (speaking?.name === n ? speaking.text : undefined)
   const arrest = patient?.rhythm === 'VF' || patient?.rhythm === 'asystole'
@@ -162,16 +164,19 @@ export function RoomScene({ run }: { run: CodeRun }) {
           <Layer depth={0.75} style={{ left: '62%', top: '20%', zIndex: z('Okafor', 10) }}>
             <div className="origin-bottom scale-[0.86] transition-[filter] duration-300" style={{ filter: `brightness(${0.9 * dim('Okafor')})` }}>
               <CharacterCard name="Okafor" emotion={emotions.Okafor} action={lastAction.Okafor} speakingText={say('Okafor')} bubbleSide="left" />
+              <TrustMeter value={trust.Okafor} color="#C084FC" />
             </div>
           </Layer>
           <Layer depth={1.1} style={{ left: '78%', top: '50%', zIndex: z('Raj', 20) }}>
             <div className="origin-bottom scale-[0.96] transition-[filter] duration-300" style={{ filter: `brightness(${dim('Raj')})` }}>
               <CharacterCard name="Raj" emotion={emotions.Raj} action={lastAction.Raj} speakingText={say('Raj')} bubbleSide="topLeft" />
+              <TrustMeter value={trust.Raj} color="#7C9CFF" />
             </div>
           </Layer>
           <Layer depth={1.45} style={{ left: '38%', top: '55%', zIndex: z('Kim', 30) }}>
             <div className="origin-bottom scale-[1.08] transition-[filter] duration-300" style={{ filter: `brightness(${dim('Kim')})` }}>
               <CharacterCard name="Kim" emotion={emotions.Kim} action={lastAction.Kim} speakingText={say('Kim')} cpr={!!patient?.cpr_running} bubbleSide="left" />
+              <TrustMeter value={trust.Kim} color="#FF8A65" />
             </div>
           </Layer>
         </div>
