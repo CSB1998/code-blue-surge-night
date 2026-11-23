@@ -35,3 +35,14 @@ export function loadInitials(): string {
 export function saveInitials(s: string) {
   try { localStorage.setItem(INITIALS_KEY, cleanInitials(s)) } catch { /* ignore */ }
 }
+
+/** End-of-run bonuses, shown as separate lines on the debrief. */
+export interface Bonus { label: string; points: number }
+export function endBonuses(debriefScore: number | undefined, roscAt: number | null): Bonus[] {
+  const out: Bonus[] = []
+  if (typeof debriefScore === 'number') out.push({ label: 'Reyes evaluation', points: Math.round(debriefScore * 5) })
+  if (roscAt !== null && roscAt < 120) out.push({ label: 'Fast ROSC (under 2:00)', points: 200 })
+  else if (roscAt !== null && roscAt < 180) out.push({ label: 'Fast ROSC (under 3:00)', points: 100 })
+  return out
+}
+export const total = (live: number, bonuses: Bonus[]) => live + bonuses.reduce((a, b) => a + b.points, 0)

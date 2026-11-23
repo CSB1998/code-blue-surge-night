@@ -1,6 +1,6 @@
 import type { RunEnded } from '../../model/contract'
 import type { GameStats } from './useGameScore'
-import { rankFor, type Entry } from './scores'
+import { rankFor, total, type Bonus, type Entry } from './scores'
 import { Leaderboard } from './Leaderboard'
 
 interface Badge { id: string; icon: string; name: string; how: string; earned: boolean }
@@ -18,18 +18,25 @@ export function achievements(stats: GameStats, ended: RunEnded | null, vent: str
 }
 
 /** Arcade layer of the debrief: final score + rank, badges, leaderboard. */
-export function GameDebrief({ score, stats, ended, vent, board, highlightId }: {
-  score: number; stats: GameStats; ended: RunEnded | null; vent?: string; board: Entry[]; highlightId?: string
+export function GameDebrief({ score, bonuses, stats, ended, vent, board, highlightId }: {
+  score: number; bonuses: Bonus[]; stats: GameStats; ended: RunEnded | null; vent?: string; board: Entry[]; highlightId?: string
 }) {
+  const final = total(score, bonuses)
   const badges = achievements(stats, ended, vent)
   const earned = badges.filter((b) => b.earned).length
   return (
     <div className="mt-6 grid grid-cols-12 gap-6">
       <section aria-label="Rank" className="col-span-3 flex flex-col items-center justify-center rounded-2xl border-2 border-bp/60 bg-panel p-6 text-center">
         <p className="text-[13px] font-bold tracking-[0.25em] text-muted">GAME SCORE</p>
-        <p className="font-mono text-[64px] font-bold leading-none tabular-nums text-bp">{score}</p>
+        <p className="font-mono text-[64px] font-bold leading-none tabular-nums text-bp">{final}</p>
+        <dl className="mt-3 w-full space-y-1 border-t border-line pt-3 text-[14px]">
+          <div className="flex justify-between"><dt className="text-muted">Live score</dt><dd className="font-mono tabular-nums">{score}</dd></div>
+          {bonuses.map((b) => (
+            <div key={b.label} className="flex justify-between"><dt className="text-muted">{b.label}</dt><dd className="font-mono font-bold tabular-nums text-ecg">+{b.points}</dd></div>
+          ))}
+        </dl>
         <p className="mt-3 text-[13px] font-bold tracking-[0.25em] text-muted">RANK</p>
-        <p className="text-[30px] font-extrabold leading-tight">{rankFor(score)}</p>
+        <p className="text-[30px] font-extrabold leading-tight">{rankFor(final)}</p>
         <p className="mt-2 text-[12px] text-muted">Intern · Resident 300 · Fellow 500 · Attending 700 · Chief 900</p>
       </section>
 

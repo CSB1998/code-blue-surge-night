@@ -10,7 +10,7 @@ import { CodeScreen } from './screens/CodeScreen'
 import { DebriefScreen } from './screens/DebriefScreen'
 import { useGameScore } from './game/useGameScore'
 import { GameDebrief } from './game/GameDebrief'
-import { loadBoard, loadInitials, saveInitials, saveScore } from './game/scores'
+import { endBonuses, loadBoard, loadInitials, saveInitials, saveScore, total } from './game/scores'
 
 export default function App() {
   const run = useCodeRun()
@@ -25,7 +25,7 @@ export default function App() {
   useEffect(() => {
     if (!run.debrief || savedFor.current === run.debrief) return
     savedFor.current = run.debrief
-    const { board: b, id } = saveScore(initials, game.score)
+    const { board: b, id } = saveScore(initials, total(game.score, endBonuses(run.debrief.score, game.stats.roscAt)))
     setBoard(b)
     setNewestId(id)
   }, [run.debrief])
@@ -52,7 +52,7 @@ export default function App() {
   if (run.phase === 'debrief' && run.debrief) {
     return (
       <DebriefScreen debrief={run.debrief} ended={run.ended} onRestart={runAgain}>
-        <GameDebrief score={game.score} stats={game.stats} ended={run.ended} vent={run.patient?.vent_assigned} board={board} highlightId={newestId} />
+        <GameDebrief score={game.score} bonuses={endBonuses(run.debrief.score, game.stats.roscAt)} stats={game.stats} ended={run.ended} vent={run.patient?.vent_assigned} board={board} highlightId={newestId} />
       </DebriefScreen>
     )
   }

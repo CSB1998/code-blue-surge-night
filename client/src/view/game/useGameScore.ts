@@ -2,7 +2,7 @@
 // (agent_reply log, orders, patient ticks). Nothing here talks to the server.
 //
 //   +50  CPR ordered within 10 s of V-fib       +40  shock delivered in V-fib
-//   +100 ROSC                                    +20  order with a read-back ("confirm") that the team carried out
+//   +100 ROSC                                    +20  order with a read-back ("confirm") that the team carried out (max 5 per run)
 //   -30  a teammate refused an order             -20  a teammate acted on their own ("Kim did your job")
 //   -10  every 10 s of silence during V-fib
 import { useEffect, useRef, useState } from 'react'
@@ -18,13 +18,16 @@ export interface GameStats {
   amioOut: boolean
   rosc: boolean
   silencePenalties: number
+  /** code time (s) when the pulse came back, or null */
+  roscAt: number | null
 }
 
+const MAX_READ_BACKS = 5
 const READ_BACK = /\b(confirm|repeat( it)? back|read back|tell me when|let me know|call it out)\b/i
 const REFUSAL = /\b(refused|withheld|could not)\b/i
 const TEAM: AgentName[] = ['Kim', 'Raj', 'Okafor']
 
-const freshStats = (): GameStats => ({ firstResponder: false, refusals: 0, kimAutonomous: false, amioOut: false, rosc: false, silencePenalties: 0 })
+const freshStats = (): GameStats => ({ firstResponder: false, refusals: 0, kimAutonomous: false, amioOut: false, rosc: false, silencePenalties: 0, roscAt: null })
 const freshTrust = (): Record<AgentName, number> => ({ Kim: 70, Raj: 70, Okafor: 70 })
 
 let popId = 1
@@ -42,6 +45,7 @@ export function useGameScore(run: CodeRun) {
   const lastOrderT = useRef(-1)
   const lastSilenceT = useRef(-1)
   const pendingReadBack = useRef<number | null>(null)
+  const readBacks = useRef(0)
 
   const award = (delta: number, label: string) => {
     setScore((s) => s + delta)
@@ -59,7 +63,7 @@ export function useGameScore(run: CodeRun) {
     if (run.patient === null && run.log.length === 0) {
       setScore(0); setPops([]); setStats(freshStats()); setTrust(freshTrust())
       seenLog.current = 0; seenOrders.current = 0; vfStart.current = null
-      prev.current = { shocks: 0 }; lastOrderT.current = -1; lastSilenceT.current = -1; pendingReadBack.current = null
+      prev.current = { shocks: 0 }; lastOrderT.current = -1; lastSilenceT.current = -1; pendingReadBack.current = null; readBacks.current = 0
     }
   }, [run.patient, run.log.length])
 
@@ -93,7 +97,7 @@ export function useGameScore(run: CodeRun) {
       } else if (!r.autonomous) {
         nudgeTrust(r.name, +5)
         if (pendingReadBack.current !== null && r.t_s - pendingReadBack.current <= 6) {
-          award(+20, 'Closed loop')
+          if (readBacks.current < MAX_READ_BACKS) { readBacks.current++; award(+20, 'Closed loop') }
           pendingReadBack.current = null
         }
       }
@@ -112,7 +116,7 @@ export function useGameScore(run: CodeRun) {
     if (p.shocks > prev.current.shocks && (p.rhythm === 'VF' || prev.current.rhythm === 'VF')) award(+40, 'Shock in V-fib')
     if (p.rhythm === 'ROSC' && prev.current.rhythm !== 'ROSC') {
       award(+100, 'ROSC!')
-      setStats((s) => ({ ...s, rosc: true }))
+      setStats((s) => ({ ...s, rosc: true, roscAt: p.t_s }))
     }
     if (p.rhythm === 'VF' && vfStart.current !== null) {
       const since = Math.max(vfStart.current, lastOrderT.current, lastSilenceT.current)
