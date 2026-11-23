@@ -11,6 +11,7 @@ npm-debug.log*
 # Secrets and local data
 .env
 .env.local
+.bruin.yml
 agent_config.yaml
 *.duckdb
 *.duckdb.wal
@@ -20,3 +21,7 @@ agent_config.yaml
 Thumbs.db
 .vscode/
 .idea/
+
+logs/runs
+logs/*.log
+*.py[cod]

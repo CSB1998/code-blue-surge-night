@@ -6,13 +6,33 @@ Clean architecture. Dependencies point inward: HTTP and Ollama know about use ca
 
 ```
 main.py                         composition root (uvicorn main:app)
-app/domain/                     entities and errors
-app/application/                use cases and the LanguageModel port
-app/infrastructure/             settings and the Ollama adapter
-app/interfaces/http/            FastAPI routes, schemas, error mapping
+app/domain/                     code state machine, entities, errors
+app/application/                dialogue, debrief, LanguageModel port
+app/infrastructure/             Postgres log, Ollama, BAND room, settings
+app/interfaces/http/            FastAPI routes
+app/interfaces/socket/          socket.io game gateway
 ```
 
-The client expects this process on **port 3001**. Socket event contract (still to wire): root [README](../README.md#socket-event-contract) and [`client/src/model/contract.ts`](../client/src/model/contract.ts).
+The client expects this process on **port 3001**. Set `VITE_MOCK=false` in `client/.env`. The socket contract is [`client/src/model/contract.ts`](../client/src/model/contract.ts).
+
+At the end of a code the server runs `bruin run bruin/codeblue` and the debrief charts, skill scores, and "how the team behaved" lines are read from the analytics tables. See the [Bruin readme](../bruin/README.md).
+
+Agent whispers are @mentions in a collaboration room. Put BAND agent ids and API keys in `agent_config.yaml` at the repo root (gitignored) and those mentions are posted to BAND. A LangGraph adapter can replace that publisher later.
+
+```yaml
+kim:
+  agent_id: "<from app.band.ai>"
+  api_key: "<shown once>"
+raj:
+  agent_id: ""
+  api_key: ""
+okafor:
+  agent_id: ""
+  api_key: ""
+reyes:
+  agent_id: ""
+  api_key: ""
+```
 
 ## Run
 

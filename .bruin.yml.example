@@ -1,0 +1,12 @@
+default_environment: default
+environments:
+  default:
+    connections:
+      postgres:
+        - name: codeblue
+          username: ${POSTGRES_USERNAME}
+          password: ${POSTGRES_PASSWORD}
+          host: ${POSTGRES_HOST}
+          port: 5432
+          database: codeblue
+          ssl_mode: require

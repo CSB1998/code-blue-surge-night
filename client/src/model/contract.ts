@@ -78,6 +78,8 @@ export interface Debrief {
   team_said_behind_your_back: string[]
   ventilator_call: string
   next_time: string
+  /** Lines computed by the Bruin pipeline from the decision log. */
+  bruin_insights?: string[]
   charts: {
     vitals: { t_s: number; spo2: number; hr: number }[]
     orders: { t_s: number; transcript: string; clarity: number }[]

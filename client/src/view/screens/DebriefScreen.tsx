@@ -55,7 +55,7 @@ export function DebriefScreen({ debrief: d, ended, onRestart }: { debrief: Debri
 
         <div className="mt-6 grid grid-cols-12 gap-6">
           {/* Skills */}
-          <Card title="Your skills" className="col-span-5">
+          <Card title="Your skills" bruin className="col-span-5">
             <ul className="space-y-4">
               {(Object.keys(SKILL_LABELS) as (keyof Skills)[]).map((k) => (
                 <li key={k}>
@@ -126,6 +126,16 @@ export function DebriefScreen({ debrief: d, ended, onRestart }: { debrief: Debri
           {/* Best and worst */}
           <MomentCard className="col-span-6" kind="best" m={d.best_moment} />
           <MomentCard className="col-span-6" kind="worst" m={d.worst_moment} />
+
+          {d.bruin_insights && d.bruin_insights.length > 0 && (
+            <Card title="How the team behaved" bruin className="col-span-12">
+              <ul className="space-y-2">
+                {d.bruin_insights.map((line) => (
+                  <li key={line} className="text-[17px]">{line}</li>
+                ))}
+              </ul>
+            </Card>
+          )}
 
           {/* Behind your back */}
           <Card title="What your team said behind your back" className="col-span-7">
