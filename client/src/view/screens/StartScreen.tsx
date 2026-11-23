@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { CHARACTERS, portrait } from '../../model/characters'
 import { speechSupported } from '../../controller/useSpeechRecognition'
 import { MOCK } from '../../controller/transport'
-import roomImg from '../../assets/room.png'
+import titleImg from '../../assets/title.jpg'
 
 type MicState = 'unknown' | 'checking' | 'ok' | 'blocked'
 
@@ -29,8 +29,8 @@ export function StartScreen({ onStart }: { onStart: () => void }) {
 
   return (
     <main className="relative h-full overflow-hidden">
-      <img src={roomImg} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30" />
-      <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/90 to-bg/40" />
+      <img src={titleImg} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" />
+      <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/75 to-bg/10" />
 
       <div className="relative flex h-full flex-col justify-center px-[140px]">
         <p className="font-mono text-[18px] font-bold tracking-[0.3em] text-alarm">
