@@ -37,7 +37,23 @@ class VoiceQueue {
   private nextId = 1
   private listeners = new Set<Listener>()
   private fallbackTimer?: ReturnType<typeof setTimeout>
+  private lastSayAt = 0
+  private cutIn = false
+  private chaosListeners = new Set<() => void>()
   muted = false
+  /** 0..1, applied to every utterance (set by the view's volume slider). */
+  volume = 1
+  /**
+   * Chaos mode (set by the view during V-fib): a line arriving within 1.5 s of
+   * the previous one cuts in over it instead of waiting. Browser speech can only
+   * voice one line at a time, so "overlap" means the new voice talks over the old.
+   */
+  chaos = false
+
+  onChaos(cb: () => void) {
+    this.chaosListeners.add(cb)
+    return () => { this.chaosListeners.delete(cb) }
+  }
 
   constructor() {
     // Chrome loads voices asynchronously.
@@ -50,8 +66,19 @@ class VoiceQueue {
   }
 
   say(name: Speaker, text: string) {
-    this.queue.push({ id: this.nextId++, name, text })
-    if (!this.playing) this.playNext()
+    const now = Date.now()
+    const line = { id: this.nextId++, name, text }
+    if (this.chaos && this.playing && now - this.lastSayAt < 1500) {
+      // talk over the current speaker
+      this.queue.unshift(line)
+      this.cutIn = true
+      this.chaosListeners.forEach((l) => l())
+      if (this.muted || !synth) { clearTimeout(this.fallbackTimer); this.cutIn = false; this.playNext() } else synth.cancel()
+    } else {
+      this.queue.push(line)
+      if (!this.playing) this.playNext()
+    }
+    this.lastSayAt = now
   }
 
   setMuted(m: boolean) {
@@ -74,7 +101,15 @@ class VoiceQueue {
     if (!line) { this.playing = false; this.emit(null); return }
     this.playing = true
     this.emit(line)
-    const done = () => { clearTimeout(this.fallbackTimer); this.fallbackTimer = setTimeout(() => this.playNext(), 250) }
+    let finished = false
+    const done = () => {
+      if (finished) return
+      finished = true
+      clearTimeout(this.fallbackTimer)
+      const gap = this.cutIn ? 0 : 250
+      this.cutIn = false
+      this.fallbackTimer = setTimeout(() => this.playNext(), gap)
+    }
 
     if (this.muted || !synth) {
       // silent playback: ~280 ms per word, min 1.8 s
@@ -86,6 +121,7 @@ class VoiceQueue {
     u.voice = pickVoice(line.name) ?? null
     u.rate = p.rate
     u.pitch = p.pitch
+    u.volume = this.volume
     u.onend = done
     u.onerror = done
     // safety net in case the browser never fires onend

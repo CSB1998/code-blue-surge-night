@@ -43,8 +43,13 @@ export function WhisperPanel({ whispers }: { whispers: (Whisper & { id: number }
       <ol className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
         {whispers.length === 0 && <li className="px-1 text-[15px] text-muted">Quiet. For now.</li>}
         {whispers.map((w) => (
-          <li key={w.id} className="anim-slide-in rounded-lg border border-line bg-[#0e1420] px-3 py-2">
+          <li
+            key={w.id}
+            className="anim-whisper rounded-xl border border-[#2b3a55] bg-[#0e1420]/95 px-3 py-2 shadow-[0_6px_24px_rgb(0_0_0/0.45)]"
+            style={{ borderLeft: `3px solid ${colorOf(w.from)}` }}
+          >
             <div className="flex items-center gap-1.5 text-[13px]">
+              <span className="rounded bg-[#1d2740] px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-muted"><span aria-hidden="true">🔒 </span>PRIVATE</span>
               <span className="font-bold" style={{ color: colorOf(w.from) }}>{w.from}</span>
               <span className="text-muted" aria-label="to">→</span>
               <span className="font-bold" style={{ color: colorOf(w.to) }}>{w.to}</span>

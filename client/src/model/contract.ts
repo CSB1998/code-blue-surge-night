@@ -4,6 +4,8 @@
 export type Rhythm = 'pre_arrest' | 'VF' | 'asystole' | 'ROSC'
 export type VentAssigned = 'none' | 'maria' | 'bed4'
 export type AgentName = 'Kim' | 'Raj' | 'Okafor'
+/** Who can send an agent_reply. Dr. Reyes may answer a teammate from the doorway. */
+export type ReplyName = AgentName | 'Reyes'
 export type Emotion = 'focused' | 'stressed' | 'annoyed' | 'relieved' | 'defiant'
 
 // ---------- Server -> client ----------
@@ -24,7 +26,7 @@ export interface PatientState {
 
 export interface AgentReply {
   t_s: number
-  name: AgentName
+  name: ReplyName
   spoken: string
   action: string
   emotion: Emotion

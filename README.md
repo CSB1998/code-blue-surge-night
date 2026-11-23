@@ -80,7 +80,7 @@ The TypeScript source of truth is [`client/src/model/contract.ts`](client/src/mo
 | Event | Payload |
 |---|---|
 | `patient` (every 1 s) | `{ t_s, rhythm: "pre_arrest"\|"VF"\|"asystole"\|"ROSC", hr, spo2, bp: "120/80", cpr_running, shocks, epi_count, amio_left, vent_assigned: "none"\|"maria"\|"bed4" }` |
-| `agent_reply` | `{ t_s, name: "Kim"\|"Raj"\|"Okafor", spoken, action, emotion: "focused"\|"stressed"\|"annoyed"\|"relieved"\|"defiant", autonomous: boolean, reason }` |
+| `agent_reply` | `{ t_s, name: "Kim"\|"Raj"\|"Okafor"\|"Reyes", spoken, action, emotion: "focused"\|"stressed"\|"annoyed"\|"relieved"\|"defiant", autonomous: boolean, reason }` |
 | `whisper` | `{ t_s, from, to, text }` |
 | `reyes_note` | `{ t_s, hint, note }` |
 | `vent_decision` | `{ t_s, message }` |

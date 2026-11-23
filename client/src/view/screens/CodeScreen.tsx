@@ -1,8 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CodeRun } from '../../controller/useCodeRun'
 import { MOCK } from '../../controller/transport'
-import { beep } from '../../controller/sound'
-import { Monitor, alarmReason } from '../components/Monitor'
+import { voices } from '../../controller/voices'
+import { soundscape } from '../audio/soundscape'
+import { toggleFullscreen } from '../fullscreen'
+import { Monitor } from '../components/Monitor'
 import { RoomScene } from '../components/RoomScene'
 import { DecisionLog, WhisperPanel } from '../components/Panels'
 import { BottomBar } from '../components/BottomBar'
@@ -11,15 +13,31 @@ import { VentModal } from '../components/VentModal'
 const OUTCOME_TEXT = { survived: 'Maria survived', complications: 'Maria survived, with complications', died: 'Maria died' }
 
 export function CodeScreen({ run }: { run: CodeRun }) {
-  const alarm = alarmReason(run.patient)
+  // ---- soundscape: read-only on patient ticks; stops when the code ends
+  useEffect(() => { soundscape.update(run.patient) }, [run.patient])
+  useEffect(() => { if (run.ended) soundscape.stop() }, [run.ended])
 
-  // Alarm beep every 1.2 s while an alarm is active
+  // soft chime for each new whisper
+  const seenWhispers = useRef(0)
   useEffect(() => {
-    if (!alarm || run.muted || run.ended) return
-    beep()
-    const id = setInterval(() => beep(), 1200)
-    return () => clearInterval(id)
-  }, [alarm, run.muted, run.ended])
+    if (run.whispers.length > seenWhispers.current) soundscape.chime()
+    seenWhispers.current = run.whispers.length
+  }, [run.whispers.length])
+
+  // chaos: during V-fib, lines arriving close together talk over each other
+  useEffect(() => {
+    voices.chaos = run.patient?.rhythm === 'VF'
+    return () => { voices.chaos = false }
+  }, [run.patient?.rhythm])
+
+  // ---- volume + mute (remembered); mute also silences the voices
+  const [volume, setVolume] = useState(soundscape.volume)
+  useEffect(() => {
+    voices.volume = soundscape.volume
+    if (soundscape.muted !== run.muted) run.setMuted(soundscape.muted)
+  }, [])
+  const toggleMute = () => { const m = !run.muted; run.setMuted(m); soundscape.setMuted(m) }
+  const changeVolume = (v: number) => { setVolume(v); soundscape.setVolume(v); voices.volume = v }
 
   const okaforLine = run.log.find((r) => r.name === 'Okafor' && /vent/i.test(r.spoken))?.spoken
 
@@ -33,12 +51,22 @@ export function CodeScreen({ run }: { run: CodeRun }) {
         <span className="text-[15px] text-muted">City General ICU · every bed full · respiratory virus surge</span>
         {MOCK && <span className="rounded bg-bp/15 px-2 py-0.5 text-[12px] font-bold text-bp ring-1 ring-bp/50">MOCK MODE</span>}
         <div className="ml-auto flex items-center gap-2">
-          <button
-            onClick={() => run.setMuted(!run.muted)}
-            aria-pressed={run.muted}
-            className="rounded-lg border border-line px-3 py-1.5 text-[14px] hover:border-spo2"
-          >
-            <span aria-hidden="true">{run.muted ? '🔇' : '🔊'} </span>{run.muted ? 'Sound off' : 'Sound on'}
+          <label className="flex items-center gap-2 text-[13px] text-muted">
+            <span aria-hidden="true">{run.muted || volume === 0 ? '🔇' : '🔊'}</span>
+            <span className="sr-only">Master volume</span>
+            <input
+              type="range" min={0} max={100} value={Math.round(volume * 100)}
+              onChange={(e) => changeVolume(Number(e.target.value) / 100)}
+              disabled={run.muted}
+              className="w-28 accent-[#3FD5FF] disabled:opacity-40"
+              aria-valuetext={`${Math.round(volume * 100)} percent`}
+            />
+          </label>
+          <button onClick={toggleMute} aria-pressed={run.muted} className="rounded-lg border border-line px-3 py-1.5 text-[14px] hover:border-spo2">
+            {run.muted ? 'Unmute' : 'Mute'}
+          </button>
+          <button onClick={toggleFullscreen} className="rounded-lg border border-line px-3 py-1.5 text-[14px] hover:border-spo2" title="Fullscreen (F)">
+            <span aria-hidden="true">⛶ </span>Fullscreen <kbd className="ml-1 rounded border border-line px-1 font-mono text-[11px] text-muted">F</kbd>
           </button>
           <button onClick={run.endRun} disabled={!!run.ended} className="rounded-lg border border-alarm/70 px-3 py-1.5 text-[14px] text-alarm hover:bg-alarm/10 disabled:opacity-40">
             End code

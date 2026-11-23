@@ -37,28 +37,8 @@ export function BottomBar({ captions, onOrder, disabled }: { captions: Caption[]
 
   return (
     <section aria-label="Give orders" className="flex h-full items-center gap-6 rounded-xl border border-line bg-panel px-6">
-      <div className="flex flex-col items-center gap-1">
-        <button
-          type="button"
-          disabled={!mic.supported || disabled}
-          onPointerDown={(e) => { e.preventDefault(); mic.start() }}
-          onPointerUp={mic.stop}
-          onPointerLeave={() => mic.listening && mic.stop()}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.repeat) mic.start() }}
-          onKeyUp={(e) => { if (e.key === 'Enter') mic.stop() }}
-          aria-pressed={mic.listening}
-          aria-label={mic.listening ? 'Listening. Release to send order' : 'Hold to talk'}
-          className={`grid h-[104px] w-[104px] place-items-center rounded-full border-4 text-[40px] transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${
-            mic.listening ? 'anim-mic border-alarm bg-alarm text-white' : 'border-[#3a4a66] bg-panel-2 hover:border-spo2'
-          }`}
-        >
-          <span aria-hidden="true">🎙</span>
-        </button>
-        <span className="text-[12px] font-semibold text-muted">{mic.listening ? 'LISTENING…' : 'HOLD · SPACE'}</span>
-      </div>
-
       <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <p className={`min-h-[34px] truncate text-[24px] font-medium ${mic.listening ? 'text-ink' : 'text-muted'}`} aria-live="polite">
+        <p className={`min-h-[34px] truncate text-[20px] font-medium ${mic.listening ? 'text-ink' : 'text-muted'}`} aria-live="polite">
           {mic.interim ? <>"{mic.interim}"</> : mic.error ?? (mic.supported ? 'Hold the mic and give an order, e.g. "Kim, start compressions."' : 'Voice needs Chrome. Type your orders below.')}
         </p>
         <form onSubmit={submit} className="flex gap-2">
@@ -78,8 +58,29 @@ export function BottomBar({ captions, onOrder, disabled }: { captions: Caption[]
         </form>
       </div>
 
+      <div className="flex flex-col items-center gap-1">
+        <span className="text-[11px] font-bold tracking-[0.22em] text-muted">YOU · ATTENDING ON CALL</span>
+        <button
+          type="button"
+          disabled={!mic.supported || disabled}
+          onPointerDown={(e) => { e.preventDefault(); mic.start() }}
+          onPointerUp={mic.stop}
+          onPointerLeave={() => mic.listening && mic.stop()}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.repeat) mic.start() }}
+          onKeyUp={(e) => { if (e.key === 'Enter') mic.stop() }}
+          aria-pressed={mic.listening}
+          aria-label={mic.listening ? 'Listening. Release to send order' : 'Hold to talk'}
+          className={`grid h-[88px] w-[88px] place-items-center rounded-full border-4 text-[36px] transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${
+            mic.listening ? 'anim-mic border-alarm bg-alarm text-white shadow-[0_0_36px_rgb(255_59_78/0.75)]' : 'border-[#3a4a66] bg-panel-2 hover:border-spo2'
+          }`}
+        >
+          <span aria-hidden="true">🎙</span>
+        </button>
+        <span className="text-[12px] font-semibold text-muted">{mic.listening ? 'LISTENING…' : 'HOLD · SPACE'}</span>
+      </div>
+
       {/* Captions for every spoken line (also read by screen readers) */}
-      <div className="w-[560px] self-stretch overflow-hidden py-3" aria-live="polite" aria-label="Captions">
+      <div className="min-w-0 flex-1 self-stretch overflow-hidden py-3" aria-live="polite" aria-label="Captions">
         <ul className="flex h-full flex-col justify-end gap-1">
           {recent.map((c) => (
             <li key={c.id} className="anim-fade-in truncate text-[16px] leading-snug" title={c.text}>

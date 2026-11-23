@@ -3,6 +3,8 @@ import type { CodeRun } from '../../controller/useCodeRun'
 import { portrait } from '../../model/characters'
 import { CharacterCard } from './CharacterCard'
 import { alarmReason } from './Monitor'
+import { voices } from '../../controller/voices'
+import { soundscape } from '../audio/soundscape'
 import roomImg from '../../assets/room.jpg'
 
 // 2.5D "camera" over a flat painted room:
@@ -73,8 +75,20 @@ export function RoomScene({ run }: { run: CodeRun }) {
     return () => clearTimeout(id)
   }, [reyes?.id])
 
+  // ---- red vignette pulses in time with the monitor alarm (VF / asystole)
+  const [pulse, setPulse] = useState(0)
+  useEffect(() => soundscape.onAlarmPulse(() => setPulse((n) => n + 1)), [])
+
+  // ---- chaos: teammates talking over each other gives a tiny jolt
+  const [chaosHit, setChaosHit] = useState(0)
+  useEffect(() => voices.onChaos(() => setChaosHit((n) => n + 1)), [])
+
+  const rosc = patient?.rhythm === 'ROSC'
+
   // speaking card rises above the others so its bubble is never hidden
   const z = (n: string, base: number) => (speaking?.name === n ? 40 : base)
+  // everyone who isn't talking dims to 80% while someone talks
+  const dim = (n: string) => (speaking && speaking.name !== n ? 0.8 : 1)
 
   return (
     <section
@@ -85,6 +99,7 @@ export function RoomScene({ run }: { run: CodeRun }) {
     >
       {/* shake wrapper (re-mounted per alarm so the animation replays) */}
       <div key={alarmHit} className={`absolute inset-0 ${alarmHit ? 'anim-cam-shake' : ''}`}>
+      <div key={`c${chaosHit}`} className={`absolute inset-0 ${chaosHit ? 'anim-cam-shake-sm' : ''}`}>
         {/* camera: push-in during arrest */}
         <div className="cam-zoom absolute inset-0" style={{ transform: `scale(${arrest ? 1.05 : 1})` }}>
           {/* far: the room, dimmed so cards and monitor stand out */}
@@ -92,7 +107,8 @@ export function RoomScene({ run }: { run: CodeRun }) {
             <img
               src={roomImg}
               alt="ICU room at night. Maria Lopez lies in the bed with an oxygen mask, monitor and ventilator beside her."
-              className="h-full w-full object-cover [object-position:62%_50%] [filter:brightness(0.62)_saturate(0.9)]"
+              className="h-full w-full object-cover [object-position:62%_50%] transition-[filter] duration-[1200ms]"
+              style={{ filter: arrest ? 'brightness(0.47) saturate(0.85)' : 'brightness(0.62) saturate(0.9)' }}
               draggable={false}
             />
           </Layer>
@@ -127,6 +143,12 @@ export function RoomScene({ run }: { run: CodeRun }) {
             >
               📝
             </button>
+            {speaking?.name === 'Reyes' && !noteOpen && (
+              <div key={speaking.id} className="anim-pop-in absolute left-full top-2 ml-8 w-[260px] rounded-xl border-2 border-reyes bg-panel px-4 py-3 text-[17px] leading-snug shadow-2xl">
+                <span className="mb-1 block text-[12px] font-bold uppercase tracking-wider text-reyes">Reyes</span>
+                {speaking.text}
+              </div>
+            )}
             {noteOpen && reyes && (
               <div role="note" className="anim-pop-in absolute left-0 top-full mt-10 w-[330px] rounded-xl border-2 border-reyes bg-panel p-4 shadow-2xl">
                 <p className="mb-1 text-[12px] font-bold uppercase tracking-wider text-reyes">Dr. Reyes, from the doorway</p>
@@ -138,25 +160,41 @@ export function RoomScene({ run }: { run: CodeRun }) {
 
           {/* the team at three depths */}
           <Layer depth={0.75} style={{ left: '62%', top: '20%', zIndex: z('Okafor', 10) }}>
-            <div className="origin-bottom scale-[0.86] [filter:brightness(0.9)]">
+            <div className="origin-bottom scale-[0.86] transition-[filter] duration-300" style={{ filter: `brightness(${0.9 * dim('Okafor')})` }}>
               <CharacterCard name="Okafor" emotion={emotions.Okafor} action={lastAction.Okafor} speakingText={say('Okafor')} bubbleSide="left" />
             </div>
           </Layer>
           <Layer depth={1.1} style={{ left: '78%', top: '50%', zIndex: z('Raj', 20) }}>
-            <div className="origin-bottom scale-[0.96]">
+            <div className="origin-bottom scale-[0.96] transition-[filter] duration-300" style={{ filter: `brightness(${dim('Raj')})` }}>
               <CharacterCard name="Raj" emotion={emotions.Raj} action={lastAction.Raj} speakingText={say('Raj')} bubbleSide="topLeft" />
             </div>
           </Layer>
           <Layer depth={1.45} style={{ left: '38%', top: '55%', zIndex: z('Kim', 30) }}>
-            <div className="origin-bottom scale-[1.08]">
+            <div className="origin-bottom scale-[1.08] transition-[filter] duration-300" style={{ filter: `brightness(${dim('Kim')})` }}>
               <CharacterCard name="Kim" emotion={emotions.Kim} action={lastAction.Kim} speakingText={say('Kim')} cpr={!!patient?.cpr_running} bubbleSide="left" />
             </div>
           </Layer>
         </div>
       </div>
+      </div>
 
       {/* lens: soft dark vignette always, red pulse on each new alarm */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgb(0_0_0/0.55)_100%)]" />
+      {/* arrest: steady red edge, fades out over 2 s on ROSC */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgb(255_40_60/0.5)_100%)] transition-opacity duration-[2000ms]"
+        style={{ opacity: arrest ? 0.38 : 0 }}
+        aria-hidden="true"
+      />
+      {arrest && pulse > 0 && (
+        <div key={`p${pulse}`} className="anim-alarm-pulse pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_48%,rgb(255_40_60/0.45)_100%)]" aria-hidden="true" />
+      )}
+      {/* ROSC: warm light fades in over 2 s */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_55%_40%,rgb(255_190_120/0.28),transparent_70%)] mix-blend-screen transition-opacity duration-[2000ms]"
+        style={{ opacity: rosc ? 1 : 0 }}
+        aria-hidden="true"
+      />
       {alarmHit > 0 && (
         <div
           key={`v${alarmHit}`}
