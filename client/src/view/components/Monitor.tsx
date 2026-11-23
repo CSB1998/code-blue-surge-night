@@ -1,6 +1,7 @@
 import type { PatientState, Rhythm } from '../../model/contract'
 import { mmss } from '../../model/format'
 import { EcgCanvas } from './EcgCanvas'
+import mariaImg from '../../assets/maria.jpg'
 
 const RHYTHM_LABEL: Record<Rhythm, string> = {
   pre_arrest: 'SINUS TACH',
@@ -36,9 +37,20 @@ export function Monitor({ p }: { p: PatientState | null }) {
       className={`relative rounded-xl border border-line bg-[#070a10] p-4 transition-shadow ${alarm ? 'anim-alarm' : ''}`}
     >
       <header className="mb-2 flex items-center justify-between">
-        <div>
-          <h2 className="text-[13px] font-semibold tracking-[0.18em] text-muted">PATIENT MONITOR</h2>
-          <p className="text-[15px] font-medium">Maria Lopez, 58 · Bed 7</p>
+        <div className="flex items-center gap-3">
+          {/* patient close-up card; ring turns red with "no pulse" text during arrest */}
+          <figure className="relative m-0">
+            <img
+              src={mariaImg}
+              alt="Close-up of Maria Lopez in bed with an oxygen mask"
+              className={`h-[64px] w-[64px] rounded-lg object-cover ring-2 transition-[box-shadow] duration-300 ${noPulse ? 'ring-alarm' : p?.rhythm === 'ROSC' ? 'ring-ecg' : 'ring-line'}`}
+            />
+            {noPulse && <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded bg-alarm px-1 text-[9px] font-bold whitespace-nowrap text-[#1a0005]">NO PULSE</span>}
+          </figure>
+          <div>
+            <h2 className="text-[13px] font-semibold tracking-[0.18em] text-muted">PATIENT MONITOR</h2>
+            <p className="text-[15px] font-medium">Maria Lopez, 58 · Bed 7</p>
+          </div>
         </div>
         <div className="text-right font-mono">
           <div className="text-[13px] text-muted">{clock(p?.t_s ?? 0)}</div>

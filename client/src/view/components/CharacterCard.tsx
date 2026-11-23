@@ -8,7 +8,7 @@ interface Props {
   action?: { action: string; at: number }
   speakingText?: string
   cpr?: boolean
-  bubbleSide?: 'top' | 'right' | 'left'
+  bubbleSide?: 'top' | 'topLeft' | 'right' | 'left'
 }
 
 /** Which little animation an action should trigger. */
@@ -39,6 +39,7 @@ export function CharacterCard({ name, emotion, action, speakingText, cpr, bubble
 
   const bubblePos = {
     top: 'bottom-full left-1/2 mb-3 -translate-x-1/2',
+    topLeft: 'bottom-full right-0 mb-3',
     right: 'left-full top-4 ml-3',
     left: 'right-full top-4 mr-3',
   }[bubbleSide]
@@ -48,7 +49,7 @@ export function CharacterCard({ name, emotion, action, speakingText, cpr, bubble
       {speaking && (
         <div
           key={speakingText}
-          className={`anim-pop-in absolute z-20 w-[300px] rounded-xl border-2 bg-panel px-4 py-3 text-[17px] leading-snug shadow-2xl ${bubblePos}`}
+          className={`anim-pop-in absolute z-20 w-[260px] rounded-xl border-2 bg-panel px-4 py-3 text-[17px] leading-snug shadow-2xl ${bubblePos}`}
           style={{ borderColor: c.color }}
         >
           <span className="mb-1 block text-[12px] font-bold uppercase tracking-wider" style={{ color: c.color }}>{c.name}</span>

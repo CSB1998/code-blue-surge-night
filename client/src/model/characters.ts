@@ -26,6 +26,8 @@ export const CHARACTERS: Record<Speaker, Character> = {
 
 export function portrait(name: Speaker, emotion: Emotion = 'focused'): string {
   const id = CHARACTERS[name].id
+  // Dr. Reyes is always shown as her doorway silhouette, whatever the emotion.
+  if (id === 'reyes') return find('reyes', 'silhouette') ?? find('reyes', emotion)
   return find(id, emotion) ?? find(id, 'focused')
 }
 

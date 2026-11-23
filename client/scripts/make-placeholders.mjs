@@ -156,7 +156,7 @@ function face(c, cx, cy, emotion, ink) {
 }
 
 for (const [key, p] of Object.entries(PEOPLE)) {
-  if (existsSync(join(OUT, key, 'focused.jpg'))) { console.log('skip', key, '(real art present)'); continue }
+  if (existsSync(join(OUT, key, 'focused.jpg')) || existsSync(join(OUT, key, 'silhouette.jpg'))) { console.log('skip', key, '(real art present)'); continue }
   const accent = hex(p.accent)
   for (const emo of EMOTIONS) {
     const c = canvas(400, 500)
@@ -179,7 +179,7 @@ for (const [key, p] of Object.entries(PEOPLE)) {
 }
 
 // ---------- room ----------
-{
+if (!existsSync(join(OUT, '..', 'room.jpg'))) {
   const c = canvas(1600, 900)
   c.gradient([16, 24, 40], [10, 14, 22])
   c.rect(0, 640, 1600, 260, [14, 19, 30])
@@ -202,7 +202,7 @@ for (const [key, p] of Object.entries(PEOPLE)) {
 }
 
 // ---------- Maria in bed ----------
-{
+if (!existsSync(join(OUT, '..', 'maria.jpg'))) {
   const c = canvas(640, 360)
   const frame = [72, 84, 104]
   c.rect(40, 210, 560, 22, frame) // bed frame
