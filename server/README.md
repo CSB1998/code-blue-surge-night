@@ -17,7 +17,7 @@ The client expects this process on **port 3001**. Set `VITE_MOCK=false` in `clie
 
 At the end of a code the server runs `bruin run bruin/codeblue` and the debrief charts, skill scores, and "how the team behaved" lines are read from the analytics tables. See the [Bruin readme](../bruin/README.md).
 
-Agent whispers are @mentions in a collaboration room. Put BAND agent ids and API keys in `agent_config.yaml` at the repo root (gitignored) and those mentions are posted to BAND. A LangGraph adapter can replace that publisher later.
+Spoken lines and whispers go to the existing BAND room **AWSHackathon**. A LangGraph turn posts the line, and when it names a teammate that teammate answers with one sentence from Ollama and posts the answer back. Put BAND agent ids and API keys in `agent_config.yaml` at the repo root (gitignored).
 
 ```yaml
 kim:

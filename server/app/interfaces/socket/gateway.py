@@ -11,7 +11,6 @@ import socketio
 
 from app.application.debrief import build_debrief, run_pipeline
 from app.application.ports import LanguageModel
-from app.application.voice import spoken_line
 from app.domain.code_run import CodeRun
 from app.infrastructure.band_room import BandRoom
 from app.infrastructure.config import Settings
@@ -67,12 +66,10 @@ class GameSession:
         self.sio = sio
         self.settings = settings
         self.store = store
-        self.model = model
         self.run_id = uuid.uuid4().hex[:12]
         self.tasks: list[asyncio.Task[None]] = []
-        self.voice_lock = asyncio.Lock()
-        self.model_task: asyncio.Task[None] | None = None
-        self.band = BandRoom(self.run_id, store, settings.band_config)
+        self.band = BandRoom(self.run_id, store, settings.band_config, model)
+        self.band.on_reply = self._show_reply
         self.run = CodeRun(self.run_id, self.emit_now, self.later)
         self._debrief_started = False
 
@@ -114,11 +111,10 @@ class GameSession:
         try:
             if event == "agent_reply":
                 self.store.decision(self.run_id, payload)
-                await self.band.spoken(payload)
-                self._schedule_model_line(payload)
+                self._collaborate(self.band.spoken(payload))
             elif event == "whisper":
                 self.store.whisper(self.run_id, payload)
-                await self.band.whisper(payload)
+                self._collaborate(self.band.whisper(payload))
             elif event == "patient":
                 self.store.vital(self.run_id, payload)
             elif event == "run_ended":
@@ -146,22 +142,14 @@ class GameSession:
             debrief = _fallback(summary)
         await self.sio.emit("debrief", debrief, to=self.sid)
 
-    def _schedule_model_line(self, payload: dict[str, Any]) -> None:
-        if self.model_task and not self.model_task.done():
+    def _collaborate(self, turn) -> None:
+        self.tasks.append(asyncio.create_task(turn))
+
+    async def _show_reply(self, payload: dict[str, Any]) -> None:
+        if self._debrief_started:
             return
-
-        async def speak() -> None:
-            line = await spoken_line(
-                self.model, payload["name"], payload["action"], payload["reason"], payload["spoken"],
-            )
-            if line == payload["spoken"] or self._debrief_started:
-                return
-            extra = {**payload, "spoken": line, "reason": "In their own words"}
-            self.store.decision(self.run_id, extra)
-            await self.band.spoken(extra)
-            await self.sio.emit("agent_reply", extra, to=self.sid)
-
-        self.model_task = asyncio.create_task(speak())
+        self.store.decision(self.run_id, payload)
+        await self.sio.emit("agent_reply", payload, to=self.sid)
 
 
 def _fallback(summary: dict[str, Any]) -> dict[str, Any]:
