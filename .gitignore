@@ -1,5 +1,8 @@
-# Node
+# Node / Python
 node_modules/
+server/.venv/
+__pycache__/
+.pytest_cache/
 dist/
 *.log
 npm-debug.log*
