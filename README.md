@@ -2,9 +2,11 @@
 
 A Track 3 **"Grow with Agents"** training simulation.
 
-It's 2:47 AM in the ICU at City General during a respiratory virus surge. Every bed is full, there is **one ventilator left**, and the heart drug **amiodarone is running low**. You are the doctor leading a cardiac arrest ("code"). You give orders **out loud**. Three AI team members respond, act on screen, push back, and secretly message each other. An attending watches from the doorway and debriefs you at the end.
+It's 2:47 AM in the ICU at City General during a respiratory virus surge. Every bed is full, there is **one ventilator left**, and the heart drug **amiodarone is running low**. You are the doctor leading a cardiac arrest ("code"). You give orders **out loud or by typing**. Four AI teammates respond, act on screen, push back, and message each other. An attending watches from the doorway and debriefs you at the end.
 
 > Training game only. Simplified medicine. Not medical advice.
+
+**How to play a code, line by line:** [RUNBOOK.md](RUNBOOK.md).
 
 | Character | Role | Personality |
 |---|---|---|
@@ -14,105 +16,79 @@ It's 2:47 AM in the ICU at City General during a respiratory virus surge. Every 
 | **Dr. Reyes** | Attending | Calm, senior. Watches from the doorway, coaches rarely, runs the debrief. |
 | **Maria Lopez, 58** | Patient | In the bed. Bed 4 (Mr. Chen) appears only as an alarm and a choice. |
 
+## Tech stack
+
+Python owns the patient. The language model only writes what a teammate says. Bruin scores the log after the code ends.
+
+| Layer | Stack | Role in the game |
+|---|---|---|
+| Client | React 19, TypeScript, Vite, Tailwind CSS, socket.io-client, Recharts | ICU room, voice and text orders, monitor, debrief charts |
+| Voice | Chrome Web Speech API | Hold Space or the mic button to give an order |
+| API | FastAPI, Uvicorn, python-socketio | One game session per socket. Patient state every 1 second |
+| Game rules | Python state machine ([`code_run.py`](server/app/domain/code_run.py)) | CPR, shocks, drugs, the ventilator, and return of pulse |
+| Dialogue | [Ollama](https://ollama.com) `stable-beluga` (completion API) | One spoken sentence. Does not decide treatment |
+| Agents | [BAND](https://band.ai) room **AWSHackathon** + LangGraph | Spoken lines and whispers are posted to the room. A named teammate answers |
+| Warehouse | Postgres on Neon | Orders, vitals, whispers, agent thoughts, collaboration |
+| Scoring | [Bruin](https://getbruin.com) (`bruin/codeblue`) | Turns that log into skill scores and the debrief |
+
+A turn looks like this:
+
+1. The player sends an order over the socket.
+2. Python matches keywords and updates the patient. The 1-second tick never waits on the model.
+3. `stable-beluga` writes the line the teammate speaks.
+4. That line is posted to the BAND room. If the line names another teammate, LangGraph asks them for one reply.
+5. At the end of the code, Bruin runs over the Postgres log and the debrief reads the analytics tables.
+
 ## Repo layout
 
 ```
-client/   Frontend: Vite + React + TypeScript + Tailwind (runs on fake data by default)
-server/   Backend: FastAPI + Ollama (clean architecture). Socket.io, DuckDB, and BAND still to wire.
-bruin/    Bruin pipeline: SQL assets and checks over codeblue.duckdb
+client/      React app (Vite). Live entry: client/src/view/App.tsx
+server/      FastAPI + socket.io + Ollama + BAND + Postgres
+bruin/       SQL pipeline that scores a finished code
+RUNBOOK.md   What to say, and when, while the clock is running
 ```
 
-## Run the client
+Map of the running code: [AGENTS.md](AGENTS.md). Server notes: [server/README.md](server/README.md). Pipeline: [bruin/README.md](bruin/README.md).
 
-Requires Node 20+ and **Google Chrome** (needed for voice input).
+## Run it
+
+You need Node 20+, Python 3, [Ollama](https://ollama.com) with `stable-beluga`, the `bruin` CLI, and the Neon connection in `.bruin.yml`. **Google Chrome** is required for voice; typing works in any browser.
 
 ```bash
+# 1. Model
+ollama pull stable-beluga
+
+# 2. API (port 3001)
+cd server
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --host 127.0.0.1 --port 3001
+
+# 3. Client (port 5173)
 cd client
 npm install
-cp .env.example .env     # Windows PowerShell: copy .env.example .env
-npm run dev              # open http://localhost:5173
+cp .env.example .env
+npm run dev
 ```
 
-### Mock mode vs real server
-
-`client/.env`:
+`client/.env` must point at the real server. Restart Vite after changing it.
 
 ```
-VITE_MOCK=true                          # true = built-in fake server, false = real socket.io server
-VITE_SERVER_URL=http://localhost:3001   # used when VITE_MOCK=false
+VITE_MOCK=false
+VITE_SERVER_URL=http://localhost:3001
 ```
 
-Restart `npm run dev` after changing `.env`.
+Health: `GET http://127.0.0.1:3001/health`, `GET /ollama/status`, `POST /ollama/ping`.
 
-### Mock mode cheat sheet
+Then open http://localhost:5173, click **Take the code**, and follow [RUNBOOK.md](RUNBOOK.md). Shortest win: CPR, then epinephrine, then a shock while the rhythm is still V-fib, then give Maria the ventilator at 2:30.
 
-Mock mode runs a full 3 to 4 minute code with timers. Orders are matched by keyword: `cpr`/`compressions`, `shock`, `epi`, `amio`, `intubate`, `pulse`/`rhythm check`, `stop cpr`.
+## Socket contract
 
-- 0:20 the patient goes into V-fib. Stay silent for 10 s and Kim starts CPR on her own.
-- 0:45 Dr. Reyes leaves a note.
-- About 2:05, V-fib turns into asystole if nobody has shocked.
-- 2:30 the ventilator decision appears. Wait 25 s and Okafor takes the vent himself.
-- **To win:** CPR, then `Raj, epi 1 milligram`, then `Kim, shock 200 joules`.
-- Use names in your orders ("Kim, ...") and ask for confirmation to raise your clarity score.
+Source of truth: [`client/src/model/contract.ts`](client/src/model/contract.ts). Default port **3001**, websocket transport, CORS from `http://localhost:5173`.
 
-### Replacing art
+**Client → server:** `start_run`, `order` (`{ transcript }`), `vent_choice` (`{ choice: "maria" | "bed4" }`), `end_run`.
 
-Placeholder images live in `client/src/assets/`:
+**Server → client:** `patient` (every 1 s), `agent_reply`, `whisper`, `reyes_note`, `vent_decision`, `run_ended`, `debrief`.
 
-```
-characters/{kim,raj,okafor,reyes}/{focused,stressed,annoyed,relieved,defiant}.png   (4:5 portrait)
-room.png    (16:9 background)
-maria.png   (Maria in the bed, transparent background)
-```
-
-Drop in new art with **the same file names**; nothing else needs to change. `npm run placeholders` regenerates the placeholders.
-
-## Screenshots
-
-_Add screenshots here: start screen, code screen, ventilator modal, debrief._
-
-## Socket event contract
-
-The TypeScript source of truth is [`client/src/model/contract.ts`](client/src/model/contract.ts). Keep the two in sync.
-
-### Server → client
-
-| Event | Payload |
-|---|---|
-| `patient` (every 1 s) | `{ t_s, rhythm: "pre_arrest"\|"VF"\|"asystole"\|"ROSC", hr, spo2, bp: "120/80", cpr_running, shocks, epi_count, amio_left, vent_assigned: "none"\|"maria"\|"bed4" }` |
-| `agent_reply` | `{ t_s, name: "Kim"\|"Raj"\|"Okafor"\|"Reyes", spoken, action, emotion: "focused"\|"stressed"\|"annoyed"\|"relieved"\|"defiant", autonomous: boolean, reason }` |
-| `whisper` | `{ t_s, from, to, text }` |
-| `reyes_note` | `{ t_s, hint, note }` |
-| `vent_decision` | `{ t_s, message }` |
-| `run_ended` | `{ maria_outcome: "survived"\|"complications"\|"died", bed4_outcome }` |
-| `debrief` | see below |
-
-```ts
-debrief: {
-  verdict, score,
-  skills: { clarity, speed, closed_loop, team_leadership, resource_decision },
-  best_moment:  { time, quote, why },
-  worst_moment: { time, quote, why },
-  team_said_behind_your_back: string[],
-  ventilator_call, next_time,
-  charts: {
-    vitals: [{ t_s, spo2, hr }],
-    orders: [{ t_s, transcript, clarity }],
-    skill_history: [{ run, clarity, speed, closed_loop, team_leadership, resource_decision }]
-  }
-}
-```
-
-### Client → server
-
-| Event | Payload |
-|---|---|
-| `start_run` | `{}` |
-| `order` | `{ t_s, transcript }` |
-| `vent_choice` | `{ choice: "maria"\|"bed4" }` |
-| `end_run` | `{}` |
-
-Notes for the server:
-- Default port the client connects to: **3001** (socket.io, websocket transport). Allow CORS from `http://localhost:5173`.
-- Skill scores are 0 to 100. `hr` can be `0` during arrest; the client shows `---`.
-- The client switches to the debrief screen about 2.5 s after `debrief` arrives.
+`agent_reply.name` is `Kim`, `Raj`, `Okafor`, or `Reyes`. Emotions are `focused`, `stressed`, `annoyed`, `relieved`, `defiant`. Skill scores are 0 to 100.

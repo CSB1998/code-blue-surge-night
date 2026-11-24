@@ -1,4 +1,8 @@
-"""Append-only decision log in Postgres. Bruin reads these tables; it does not write them."""
+"""Append-only decision log in the Postgres warehouse from `.bruin.yml`.
+
+Each method sends one kind of event. `decision` is an agent thought: what they
+said, what they did, and why. Bruin reads `raw.*` and materializes `analytics.*`.
+"""
 
 from __future__ import annotations
 

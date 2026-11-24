@@ -2,6 +2,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from app.infrastructure.bruin_config import postgres_dsn
+
 ROOT = Path(__file__).resolve().parents[3]
 SERVER_DIR = ROOT / "server"
 
@@ -38,7 +40,7 @@ def load_settings() -> Settings:
             "http://localhost:5173",
             "http://127.0.0.1:5173",
         ),
-        database_url=os.getenv("DATABASE_URL", "postgresql://siddharth@127.0.0.1:5432/codeblue"),
+        database_url=os.getenv("DATABASE_URL") or postgres_dsn(ROOT / ".bruin.yml"),
         bruin_bin=Path(os.getenv("BRUIN_BIN", str(Path.home() / ".local/bin/bruin"))),
         pipeline_dir=ROOT / "bruin" / "codeblue",
         band_config=ROOT / "agent_config.yaml",

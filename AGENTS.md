@@ -1,6 +1,6 @@
 # Code Blue: Surge Night — agent index
 
-Start here. This is the map of the running app. The root [README.md](README.md) still describes the mock client and DuckDB; trust this file instead.
+Start here. This is the map of the running app. The root [README.md](README.md) is the judge-facing overview; this file is where to edit.
 
 ## Index
 
@@ -27,7 +27,7 @@ Python decides CPR, shocks, drugs, the ventilator, and return of pulse. `stable-
 | Client | `cd client && npm run dev` | 5173 |
 | API | `cd server && .venv/bin/uvicorn main:app --host 127.0.0.1 --port 3001` | 3001 |
 | Ollama | already running, model `stable-beluga` | 11434 |
-| Postgres | local database `codeblue`, user `siddharth`, no password | 5432 |
+| Postgres | Neon database from `.bruin.yml` (`codeblue`) | 5432 |
 
 `client/.env` (gitignored) must have `VITE_MOCK=false` and `VITE_SERVER_URL=http://localhost:3001`. Restart Vite after changing it.
 
@@ -94,18 +94,19 @@ Portraits: Kim, Raj, and Okafor are `.jpg` (480×600). Reyes is still the `.png`
 
 ## 7. Postgres and Bruin
 
-DSN default: `postgresql://siddharth@127.0.0.1:5432/codeblue`. Override with `DATABASE_URL` in `server/.env` (gitignored).
+The warehouse is the `codeblue` Postgres connection in gitignored [`.bruin.yml`](.bruin.yml) (Neon). Override with `DATABASE_URL` in `server/.env`.
 
-[store.py](server/app/infrastructure/store.py) writes `raw.runs`, `raw.orders`, `raw.agent_decisions`, `raw.whispers`, `raw.vitals`, `raw.collaboration`.
+[store.py](server/app/infrastructure/store.py) writes `raw.runs`, `raw.orders`, `raw.agent_decisions` (agent thoughts), `raw.whispers`, `raw.vitals`, `raw.collaboration` into that database. Bruin reads the same tables.
 
 At the end of a code the server runs `bruin run bruin/codeblue` with cwd at the repo root, then reads:
 
 - `analytics.run_scores` — clarity, speed, closed loop, team leadership, resource decision
 - `analytics.skill_history`
 - `analytics.agent_behavior`
+- `analytics.agent_thoughts`, `analytics.collaboration`
 - `analytics.vitals`, `analytics.orders`, `analytics.whispers`
 
-Pipeline assets: [bruin/codeblue/assets/](bruin/codeblue/assets/). Connection file is gitignored `.bruin.yml`. Bruin Cloud cannot reach this laptop. Do not use DuckDB.
+Pipeline assets: [bruin/codeblue/assets/](bruin/codeblue/assets/). Connection file is gitignored `.bruin.yml`. Do not use DuckDB.
 
 ## 8. BAND and LangGraph
 

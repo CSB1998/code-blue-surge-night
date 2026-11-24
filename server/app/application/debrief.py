@@ -74,7 +74,16 @@ def build_debrief(store: DecisionLog, summary: dict[str, Any]) -> dict[str, Any]
         """,
         (run_id,),
     )
-    insights = _insights(behavior, score, len(orders))
+    thoughts = store.query(
+        """
+        SELECT t_s, agent, reason
+        FROM analytics.agent_thoughts
+        WHERE run_id = %s AND reason <> ''
+        ORDER BY t_s
+        """,
+        (run_id,),
+    )
+    insights = _insights(behavior, thoughts, score, len(orders))
     weakest = min(SKILLS, key=lambda name: skills[name])
     outcome = summary["maria_outcome"]
     verdict = {
@@ -109,8 +118,10 @@ def build_debrief(store: DecisionLog, summary: dict[str, Any]) -> dict[str, Any]
     }
 
 
-def _insights(behavior: list[dict[str, Any]], score: int, orders: int) -> list[str]:
+def _insights(behavior: list[dict[str, Any]], thoughts: list[dict[str, Any]], score: int, orders: int) -> list[str]:
     lines = [f"Bruin scored this code {score} from {orders} orders logged in Postgres."]
+    for row in thoughts[:4]:
+        lines.append(f"At {mmss(int(row['t_s']))}, {row['agent']} was thinking: {row['reason']}")
     for row in behavior:
         parts = []
         if row["autonomous_actions"]:
